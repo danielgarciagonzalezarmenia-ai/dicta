@@ -795,25 +795,42 @@ public class SwiftDeviceCalendarPlugin: NSObject, FlutterPlugin {
             completion(true)
             return
         }
-        eventStore.requestAccess(to: .event, completion: {
-            (accessGranted: Bool, _: Error?) in
-            completion(accessGranted)
-        })
+        requestEventAccess { granted in
+            completion(granted)
+        }
+    }
+    
+    /// iOS 17+ sustituyo `requestAccess(to:)` por `requestFullAccessToEvents`.
+    private func requestEventAccess(completion: @escaping (Bool) -> Void) {
+        if #available(iOS 17.0, *) {
+            eventStore.requestFullAccessToEvents { granted, _ in
+                completion(granted)
+            }
+        } else {
+            eventStore.requestAccess(to: .event, completion: {
+                (accessGranted: Bool, _: Error?) in
+                completion(accessGranted)
+            })
+        }
     }
     
     private func hasEventPermissions() -> Bool {
         let status = EKEventStore.authorizationStatus(for: .event)
+        if #available(iOS 17.0, *) {
+            // En iOS 17+ el acceso total ya no reporta `.authorized`.
+            return status == .fullAccess || status == .writeOnly
+        }
         return status == EKAuthorizationStatus.authorized
     }
     
     private func requestPermissions(_ result: @escaping FlutterResult) {
-        if hasEventPermissions()  {
+        if hasEventPermissions() {
             result(true)
+            return
         }
-        eventStore.requestAccess(to: .event, completion: {
-            (accessGranted: Bool, _: Error?) in
-            result(accessGranted)
-        })
+        requestEventAccess { granted in
+            result(granted)
+        }
     }
 }
 
