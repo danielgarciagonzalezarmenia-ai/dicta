@@ -1,0 +1,66 @@
+name: Build iOS (IPA sin firmar)
+
+on:
+  workflow_dispatch:
+    inputs:
+      flutter_version:
+        description: "Version de Flutter a usar"
+        required: false
+        default: "3.41.9"
+  push:
+    branches: [main]
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Compilar iOS
+    runs-on: macos-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ inputs.flutter_version || '3.41.9' }}
+          channel: stable
+          cache: true
+
+      - name: Entorno
+        run: flutter doctor -v
+
+      - name: Dependencias
+        run: flutter pub get
+
+      - name: Analizar
+        run: flutter analyze
+
+      - name: Tests
+        run: flutter test
+
+      - name: Compilar app (sin firmar)
+        run: flutter build ios --release --no-codesign
+
+      - name: Empaquetar IPA sin firmar
+        run: |
+          set -euo pipefail
+          APP="build/ios/iphoneos/Runner.app"
+          rm -rf build/ipa
+          mkdir -p build/ipa/Payload
+          cp -R "$APP" build/ipa/Payload/
+          cd build/ipa
+          zip -qry ../Dicta-unsigned.ipa Payload
+          cd ../..
+          ls -lh build/Dicta-unsigned.ipa
+
+      - name: Subir IPA como artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Dicta-unsigned-ipa
+          path: build/Dicta-unsigned.ipa
+          retention-days: 30

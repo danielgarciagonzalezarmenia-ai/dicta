@@ -1,0 +1,27 @@
+name: device_calendar
+description: A cross platform plugin for modifying calendars on the user's device.
+# Copia de device_calendar 3.9.0 vendorizada en este repo para hacerla
+# compatible con AGP 8 (namespace, compileSdk y Java 17). Solo se han tocado
+# los ficheros de build de Android; el codigo Dart y de iOS es el original.
+version: 3.9.0
+homepage: https://github.com/builttoroam/device_calendar/tree/master
+
+dependencies:
+  flutter:
+    sdk: flutter
+  meta: ^1.1.8
+  collection: ^1.15.0
+  sprintf: ^6.0.0
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.builttoroam.devicecalendar
+        pluginClass: DeviceCalendarPlugin
+      ios:
+        pluginClass: DeviceCalendarPlugin
+
+environment:
+  sdk: ">=2.12.0 <4.0.0"
+  flutter: ">=1.12.13"
